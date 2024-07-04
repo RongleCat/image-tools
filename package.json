@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "vite --host",
-    "build": "vue-tsc && vite build",
+    "build": "vue-tsc && vite build && cp -rf src/assets/imagemagick dist/assets",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,7 +17,6 @@
     "typescript": "^5.2.2",
     "vite": "^5.0.12",
     "vite-plugin-vue-devtools": "^7.2.1",
-    "vite-plugin-wasm": "^3.3.0",
     "vue-tsc": "^2.0.21"
   }
 }

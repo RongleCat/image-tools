@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import JSZip from "jszip";
 // @ts-ignore
 import * as Magick from "./assets/imagemagick/magickApi.js";
@@ -21,24 +21,34 @@ import * as Magick from "./assets/imagemagick/magickApi.js";
 // calling ImageMagick with one source image, and command to rotate & resize image
 
 const output = ref<HTMLImageElement>()
-const commandText = ref('[ "convert", "srcFile.png", "-charcoal", "2", "out.icns" ]')
+const commandText = ref('convert srcFile.png -charcoal 2 out.png')
+
+const commandArray = computed(() => {
+  return commandText.value.split(' ')
+})
+
+async function getPictureInfo(file: string, filename?: string) {
+  const finalFilename = filename || file.split('/').pop()
+  const { stdout, stderr, exitCode } = await Magick.execute({
+    inputFiles: [await Magick.buildInputFile(file, finalFilename)],
+    commands: `identify ${finalFilename}`
+  })
+
+  if (exitCode !== 0) {
+    return Promise.reject(new Error(stderr.join(' ')))
+  }
+
+  const [width, height] = stdout[0].split(' ')[2].split('x')
+
+  return [width, height]
+}
 // 执行转换
 async function execConvert() {
-  // the image element where to load output images
-  
-  // fetch the input image and get its content bytes
   const fetchedSourceImage = await fetch("/rotate.png");
   const sourceBytes = new Uint8Array(await fetchedSourceImage.arrayBuffer());
   const inputFiles = [{ name: 'srcFile.png', content: sourceBytes }]
 
-  let command: string[] = []
-  try {
-    command = JSON.parse(commandText.value)
-  } catch (ex) {
-    alert(ex)
-    //throw ex
-  }
-  const processedFiles = await Magick.Call(inputFiles, command);
+  const processedFiles = await Magick.Call(inputFiles, commandArray.value);
   // response can be multiple files (example split) here we know we just have one
   const firstOutputImage = processedFiles[0];
 
@@ -55,6 +65,12 @@ async function execConvert() {
   link.click();
   document.body.removeChild(link);
 }
+
+onMounted(async () => {
+  const fileSize = await getPictureInfo('rotate.png')
+  console.log(fileSize);
+
+})
 </script>
 
 <style scoped></style>
